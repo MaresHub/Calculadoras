@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculadora Suprema</title>
+    <style>
+      :root {
+        --primary: #6366f1;
+        --secondary: #8b5cf6;
+        --accent: #06b6d4;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --error: #ef4444;
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-tertiary: #334155;
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --glass: rgba(255, 255, 255, 0.1);
+        --glass-border: rgba(255, 255, 255, 0.2);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont,
+          sans-serif;
+        background: linear-gradient(
+          135deg,
+          var(--bg-primary) 0%,
+          var(--bg-secondary) 100%
+        );
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow-x: hidden;
+        position: relative;
+      }
+
+      /* Fundo animado otimizado */
+      .animated-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(
+            circle at 20% 80%,
+            var(--primary) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 20%,
+            var(--secondary) 0%,
+            transparent 50%
+          ),
+          radial-gradient(circle at 40% 40%, var(--accent) 0%, transparent 50%);
+        opacity: 0.1;
+        animation: bgShift 20s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      @keyframes bgShift {
+        0%,
+        100% {
+          transform: scale(1) rotate(0deg);
+        }
+        50% {
+          transform: scale(1.1) rotate(180deg);
+        }
+      }
+
+      /* Container principal */
+      .calculator-container {
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        padding: 24px;
+        width: 100%;
+        max-width: 480px;
+        animation: containerEntrance 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      @keyframes containerEntrance {
+        0% {
+          opacity: 0;
+          transform: translateY(50px) scale(0.9);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      /* Header com modos */
+      .calculator-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 12px 0;
+      }
+
+      .mode-selector {
+        display: flex;
+        background: var(--bg-tertiary);
+        border-radius: 12px;
+        padding: 4px;
+        gap: 4px;
+      }
+
+      .mode-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .mode-btn.active {
+        background: var(--primary);
+        color: white;
+        transform: scale(1.05);
+      }
+
+      .mode-btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+        transition: left 0.5s ease;
+      }
+
+      .mode-btn:hover::before {
+        left: 100%;
+      }
+
+      /* Display avançado */
+      .display-container {
+        background: var(--bg-secondary);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--glass-border);
+      }
+
+      .display-container::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(99, 102, 241, 0.1),
+          transparent
+        );
+        animation: displayScan 4s infinite;
+      }
+
+      @keyframes displayScan {
+        0% {
+          left: -100%;
+        }
+        100% {
+          left: 100%;
+        }
+      }
+
+      .expression {
+        color: var(--text-secondary);
+        font-size: 1rem;
+        margin-bottom: 8px;
+        min-height: 20px;
+        word-wrap: break-word;
+        opacity: 0.8;
+      }
+
+      .result {
+        color: var(--text-primary);
+        font-size: 2.5rem;
+        font-weight: 300;
+        text-align: right;
+        min-height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        word-break: break-all;
+        text-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        position: relative;
+      }
+
+      .result.typing {
+        animation: resultGlow 0.5s ease;
+      }
+
+      @keyframes resultGlow {
+        0%,
+        100% {
+          text-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+        50% {
+          text-shadow: 0 0 40px rgba(99, 102, 241, 0.8);
+        }
+      }
+
+      /* Histórico */
+      .history-panel {
+        background: var(--bg-tertiary);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        max-height: 120px;
+        overflow-y: auto;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.3s ease;
+      }
+
+      .history-panel.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .history-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--glass-border);
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .history-item:hover {
+        color: var(--text-primary);
+        background: var(--glass);
+        padding-left: 8px;
+        border-radius: 6px;
+      }
+
+      .history-item:last-child {
+        border-bottom: none;
+      }
+
+      /* Botões principais */
+      .buttons-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .btn {
+        background: var(--glass);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        color: var(--text-primary);
+        font-size: 1.2rem;
+        font-weight: 600;
+        height: 60px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: all 0.4s ease;
+      }
+
+      .btn:active::before {
+        width: 200px;
+        height: 200px;
+        opacity: 0;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .btn-operator {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+      }
+
+      .btn-equals {
+        background: linear-gradient(135deg, var(--success), var(--accent));
+        color: white;
+        grid-column: span 2;
+      }
+
+      .btn-clear {
+        background: linear-gradient(135deg, var(--warning), var(--error));
+        color: white;
+      }
+
+      .btn-zero {
+        grid-column: span 2;
+      }
+
+      /* Painel científico */
+      .scientific-panel {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.3s ease;
+        max-height: 0;
+        overflow: hidden;
+      }
+
+      .scientific-panel.show {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 200px;
+      }
+
+      .btn-scientific {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        height: 40px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn-scientific:hover {
+        background: var(--primary);
+        color: white;
+        transform: scale(1.05);
+      }
+
+      /* Painel de conversões */
+      .converter-panel {
+        background: var(--bg-tertiary);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.3s ease;
+        max-height: 0;
+        overflow: hidden;
+      }
+
+      .converter-panel.show {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 300px;
+      }
+
+      .converter-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+        align-items: center;
+      }
+
+      .converter-input {
+        flex: 1;
+        background: var(--bg-secondary);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--text-primary);
+        font-size: 1rem;
+      }
+
+      .converter-select {
+        background: var(--bg-secondary);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        min-width: 100px;
+      }
+
+      /* Gráfico */
+      .graph-container {
+        background: var(--bg-secondary);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.3s ease;
+        max-height: 0;
+        overflow: hidden;
+      }
+
+      .graph-container.show {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 300px;
+      }
+
+      #graphCanvas {
+        width: 100%;
+        height: 200px;
+        border-radius: 8px;
+        background: var(--bg-primary);
+      }
+
+      /* Animações de erro e sucesso */
+      .error {
+        animation: errorShake 0.5s ease-in-out;
+        color: var(--error) !important;
+      }
+
+      @keyframes errorShake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-5px);
+        }
+        75% {
+          transform: translateX(5px);
+        }
+      }
+
+      .success {
+        animation: successPulse 0.8s ease-out;
+      }
+
+      @keyframes successPulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* Loading */
+      .loading {
+        position: relative;
+      }
+
+      .loading::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: 20px;
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--glass-border);
+        border-top: 2px solid var(--primary);
+        border-radius: 50%;
+        transform: translateY(-50%);
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: translateY(-50%) rotate(0deg);
+        }
+        100% {
+          transform: translateY(-50%) rotate(360deg);
+        }
+      }
+
+      /* Responsividade */
+      @media (max-width: 480px) {
+        .calculator-container {
+          margin: 16px;
+          padding: 16px;
+        }
+
+        .result {
+          font-size: 2rem;
+        }
+
+        .btn {
+          height: 50px;
+          font-size: 1.1rem;
+        }
+
+        .mode-btn {
+          padding: 6px 8px;
+          font-size: 0.8rem;
+        }
+      }
+
+      /* Efeitos especiais */
+      .particle-effect {
+        position: absolute;
+        pointer-events: none;
+        z-index: 1000;
+      }
+
+      .particle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: var(--primary);
+        border-radius: 50%;
+        animation: particleFloat 1s ease-out forwards;
+      }
+
+      @keyframes particleFloat {
+        0% {
+          transform: scale(1) translate(0, 0);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(0) translate(var(--dx), var(--dy));
+          opacity: 0;
+        }
+      }
+
+      /* Tooltip */
+      .tooltip {
+        position: absolute;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: all 0.2s ease;
+        pointer-events: none;
+        z-index: 1000;
+        border: 1px solid var(--glass-border);
+      }
+
+      .tooltip.show {
+        opacity: 1;
+        transform: translateY(-5px);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="animated-bg"></div>
+
+    <div class="calculator-container">
+      <div class="calculator-header">
+        <div class="mode-selector">
+          <button class="mode-btn active" data-mode="basic">Básica</button>
+          <button class="mode-btn" data-mode="scientific">Científica</button>
+          <button class="mode-btn" data-mode="converter">Conversor</button>
+          <button class="mode-btn" data-mode="graph">Gráfico</button>
+        </div>
+        <button class="mode-btn" onclick="toggleHistory()">📊</button>
+      </div>
+
+      <div class="history-panel" id="historyPanel">
+        <div id="historyList"></div>
+      </div>
+
+      <div class="display-container">
+        <div class="expression" id="expression"></div>
+        <div class="result" id="result">0</div>
+      </div>
+
+      <div class="scientific-panel" id="scientificPanel">
+        <button class="btn-scientific" onclick="inputFunction('sin(')">
+          sin
+        </button>
+        <button class="btn-scientific" onclick="inputFunction('cos(')">
+          cos
+        </button>
+        <button class="btn-scientific" onclick="inputFunction('tan(')">
+          tan
+        </button>
+        <button class="btn-scientific" onclick="inputFunction('log(')">
+          log
+        </button>
+        <button class="btn-scientific" onclick="inputFunction('ln(')">
+          ln
+        </button>
+        <button class="btn-scientific" onclick="inputFunction('sqrt(')">
+          √
+        </button>
+        <button class="btn-scientific" onclick="inputOperator('^')">x^y</button>
+        <button class="btn-scientific" onclick="inputFunction('abs(')">
+          |x|
+        </button>
+        <button class="btn-scientific" onclick="inputConstant('π')">π</button>
+        <button class="btn-scientific" onclick="inputConstant('e')">e</button>
+        <button class="btn-scientific" onclick="inputOperator('(')">(</button>
+        <button class="btn-scientific" onclick="inputOperator(')')">)</button>
+        <button class="btn-scientific" onclick="inputFunction('!')">x!</button>
+        <button class="btn-scientific" onclick="inputFunction('1/')">
+          1/x
+        </button>
+        <button class="btn-scientific" onclick="inputOperator('%')">%</button>
+      </div>
+
+      <div class="converter-panel" id="converterPanel">
+        <div class="converter-row">
+          <input
+            type="number"
+            class="converter-input"
+            id="fromValue"
+            placeholder="Valor"
+          />
+          <select class="converter-select" id="fromUnit">
+            <option value="m">Metro</option>
+            <option value="km">Quilômetro</option>
+            <option value="cm">Centímetro</option>
+            <option value="mm">Milímetro</option>
+            <option value="in">Polegada</option>
+            <option value="ft">Pé</option>
+          </select>
+        </div>
+        <div class="converter-row">
+          <input
+            type="number"
+            class="converter-input"
+            id="toValue"
+            placeholder="Resultado"
+            readonly
+          />
+          <select class="converter-select" id="toUnit">
+            <option value="m">Metro</option>
+            <option value="km">Quilômetro</option>
+            <option value="cm">Centímetro</option>
+            <option value="mm">Milímetro</option>
+            <option value="in">Polegada</option>
+            <option value="ft">Pé</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="graph-container" id="graphContainer">
+        <canvas id="graphCanvas"></canvas>
+        <input
+          type="text"
+          class="converter-input"
+          id="functionInput"
+          placeholder="Digite uma função: x^2, sin(x), etc."
+          style="margin-top: 12px"
+        />
+      </div>
+
+      <div class="buttons-container">
+        <button class="btn btn-clear" onclick="clearAll()">C</button>
+        <button class="btn btn-clear" onclick="clearEntry()">CE</button>
+        <button class="btn btn-operator" onclick="deleteLast()">⌫</button>
+        <button class="btn btn-operator" onclick="inputOperator('/')">/</button>
+
+        <button class="btn" onclick="inputNumber('7')">7</button>
+        <button class="btn" onclick="inputNumber('8')">8</button>
+        <button class="btn" onclick="inputNumber('9')">9</button>
+        <button class="btn btn-operator" onclick="inputOperator('*')">×</button>
+
+        <button class="btn" onclick="inputNumber('4')">4</button>
+        <button class="btn" onclick="inputNumber('5')">5</button>
+        <button class="btn" onclick="inputNumber('6')">6</button>
+        <button class="btn btn-operator" onclick="inputOperator('-')">-</button>
+
+        <button class="btn" onclick="inputNumber('1')">1</button>
+        <button class="btn" onclick="inputNumber('2')">2</button>
+        <button class="btn" onclick="inputNumber('3')">3</button>
+        <button class="btn btn-operator" onclick="inputOperator('+')">+</button>
+
+        <button class="btn btn-zero" onclick="inputNumber('0')">0</button>
+        <button class="btn" onclick="inputDecimal()">.</button>
+        <button class="btn btn-equals" onclick="calculate()">=</button>
+      </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+      // Estado da calculadora
+      let currentInput = "0";
+      let expression = "";
+      let shouldResetDisplay = false;
+      let currentMode = "basic";
+      let history = JSON.parse(localStorage.getItem("calcHistory") || "[]");
+      let isHistoryVisible = false;
+
+      // Elementos DOM
+      const resultDisplay = document.getElementById("result");
+      const expressionDisplay = document.getElementById("expression");
+      const historyPanel = document.getElementById("historyPanel");
+      const historyList = document.getElementById("historyList");
+      const scientificPanel = document.getElementById("scientificPanel");
+      const converterPanel = document.getElementById("converterPanel");
+      const graphContainer = document.getElementById("graphContainer");
+      const tooltip = document.getElementById("tooltip");
+
+      // Sistema de modos
+      document.querySelectorAll(".mode-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (btn.dataset.mode) {
+            switchMode(btn.dataset.mode);
+            document
+              .querySelectorAll(".mode-btn")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+          }
+        });
+      });
+
+      function switchMode(mode) {
+        currentMode = mode;
+
+        // Esconder todos os painéis
+        scientificPanel.classList.remove("show");
+        converterPanel.classList.remove("show");
+        graphContainer.classList.remove("show");
+
+        // Mostrar painel específico
+        switch (mode) {
+          case "scientific":
+            scientificPanel.classList.add("show");
+            break;
+          case "converter":
+            converterPanel.classList.add("show");
+            setupConverter();
+            break;
+          case "graph":
+            graphContainer.classList.add("show");
+            setupGraph();
+            break;
+        }
+      }
+
+      // Sistema de histórico
+      function toggleHistory() {
+        isHistoryVisible = !isHistoryVisible;
+        if (isHistoryVisible) {
+          historyPanel.classList.add("show");
+          updateHistoryDisplay();
+        } else {
+          historyPanel.classList.remove("show");
+        }
+      }
+
+      function updateHistoryDisplay() {
+        historyList.innerHTML = "";
+        history
+          .slice(-10)
+          .reverse()
+          .forEach((item) => {
+            const historyItem = document.createElement("div");
+            historyItem.className = "history-item";
+            historyItem.innerHTML = `
+                    <span>${item.expression}</span>
+                    <span>${item.result}</span>
+                `;
+            historyItem.addEventListener("click", () => {
+              currentInput = item.result.toString();
+              updateDisplay();
+            });
+            historyList.appendChild(historyItem);
+          });
+      }
+
+      function addToHistory(expr, result) {
+        history.push({
+          expression: expr,
+          result: result,
+          timestamp: Date.now(),
+        });
+        if (history.length > 100) history.shift();
+        localStorage.setItem("calcHistory", JSON.stringify(history));
+      }
+
+      // Sistema de partículas
+      function createParticleEffect(x, y, color = "var(--primary)") {
+        const effect = document.createElement("div");
+        effect.className = "particle-effect";
+        effect.style.left = x + "px";
+        effect.style.top = y + "px";
+
+        for (let i = 0; i < 6; i++) {
+          const particle = document.createElement("div");
+          particle.className = "particle";
+          particle.style.background = color;
+
+          const angle = (i / 6) * Math.PI * 2;
+          const distance = 30 + Math.random() * 20;
+          const dx = Math.cos(angle) * distance;
+          const dy = Math.sin(angle) * distance;
+
+          particle.style.setProperty("--dx", dx + "px");
+          particle.style.setProperty("--dy", dy + "px");
+          particle.style.animationDelay = i * 0.1 + "s";
+
+          effect.appendChild(particle);
+        }
+
+        document.body.appendChild(effect);
+        setTimeout(() => effect.remove(), 1000);
+      }
+
+      // Parser matemático avançado
+      class MathParser {
+        static evaluate(expression) {
+          // Substituir constantes
+          expression = expression.replace(/π/g, Math.PI);
+          expression = expression.replace(/e/g, Math.E);
+
+          // Substituir funções
+          expression = expression.replace(/sin\(/g, "Math.sin(");
+          expression = expression.replace(/cos\(/g, "Math.cos(");
+          expression = expression.replace(/tan\(/g, "Math.tan(");
+          expression = expression.replace(/log\(/g, "Math.log10(");
+          expression = expression.replace(/ln\(/g, "Math.log(");
+          expression = expression.replace(/sqrt\(/g, "Math.sqrt(");
+          expression = expression.replace(/abs\(/g, "Math.abs(");
+          expression = expression.replace(/\^/g, "**");
+          expression = expression.replace(/×/g, "*");
+
+          // Tratar fatorial
+          expression = expression.replace(/(\d+)!/g, (match, num) => {
+            return this.factorial(parseInt(num));
+          });
+
+          // Tratar 1/x
+          expression = expression.replace(/1\/(\d+)/g, (match, num) => {
+            return (1 / parseFloat(num)).toString();
+          });
+
+          try {
+            return Function('"use strict"; return (' + expression + ")")();
+          } catch (error) {
+            throw new Error("Expressão inválida");
+          }
+        }
+
+        static factorial(n) {
+          if (n < 0) return NaN;
+          if (n === 0 || n === 1) return 1;
+          let result = 1;
+          for (let i = 2; i <= n; i++) {
+            result *= i;
+          }
+          return result;
+        }
+      }
+
+      // Funções da calculadora
+      function updateDisplay() {
+        resultDisplay.textContent = currentInput;
+        resultDisplay.classList.add("typing");
+        setTimeout(() => resultDisplay.classList.remove("typing"), 500);
+      }
+
+      function updateExpression() {
+        expressionDisplay.textContent = expression;
+      }
+
+      function inputNumber(num) {
+        if (shouldResetDisplay) {
+          currentInput = "0";
+          shouldResetDisplay = false;
+        }
+
+        if (currentInput === "0") {
+          currentInput = num;
+        } else {
+          currentInput += num;
+        }
+
+        updateDisplay();
+      }
+
+      function inputDecimal() {
+        if (shouldResetDisplay) {
+          currentInput = "0";
+          shouldResetDisplay = false;
+        }
+
+        if (!currentInput.includes(".")) {
+          currentInput += ".";
+          updateDisplay();
+        }
+      }
+
+      function inputOperator(operator) {
+        if (expression && !shouldResetDisplay) {
+          calculate();
+        }
+
+        expression = currentInput + " " + operator + " ";
+        updateExpression();
+        shouldResetDisplay = true;
+      }
+
+      function inputFunction(func) {
+        if (shouldResetDisplay) {
+          currentInput = "0";
+          shouldResetDisplay = false;
+        }
+
+        if (currentInput === "0") {
+          currentInput = func;
+        } else {
+          currentInput += func;
+        }
+
+        updateDisplay();
+      }
+
+      function inputConstant(constant) {
+        if (shouldResetDisplay) {
+          currentInput = "0";
+          shouldResetDisplay = false;
+        }
+
+        if (currentInput === "0") {
+          currentInput = constant;
+        } else {
+          currentInput += constant;
+        }
+
+        updateDisplay();
+      }
+
+      function calculate() {
+        if (!expression && currentMode === "basic") return;
+
+        try {
+          resultDisplay.classList.add("loading");
+
+          setTimeout(() => {
+            let fullExpression;
+            let result;
+
+            if (
+              currentMode === "scientific" ||
+              currentInput.includes("sin") ||
+              currentInput.includes("cos") ||
+              currentInput.includes("π")
+            ) {
+              // Modo científico
+              fullExpression = currentInput;
+              result = MathParser.evaluate(fullExpression);
+            } else {
+              // Modo básico
+              fullExpression = expression + currentInput;
+              result = MathParser.evaluate(fullExpression);
+            }
+
+            if (!isFinite(result)) {
+              throw new Error("Resultado inválido");
+            }
+
+            // Arredondar para evitar problemas de ponto flutuante
+            result = Math.round(result * 1e12) / 1e12;
+
+            addToHistory(fullExpression, result);
+
+            currentInput = result.toString();
+            expression = "";
+
+            resultDisplay.classList.remove("loading");
+            updateDisplay();
+            updateExpression();
+
+            resultDisplay.classList.add("success");
+            setTimeout(() => {
+              resultDisplay.classList.remove("success");
+            }, 800);
+
+            shouldResetDisplay = true;
+
+            // Efeito de partículas de sucesso
+            const rect = resultDisplay.getBoundingClientRect();
+            createParticleEffect(
+              rect.right - 20,
+              rect.top + rect.height / 2,
+              "var(--success)"
+            );
+          }, 300);
+        } catch (error) {
+          resultDisplay.classList.remove("loading");
+          currentInput = "Erro";
+          expression = "";
+          updateDisplay();
+          updateExpression();
+
+          resultDisplay.classList.add("error");
+          setTimeout(() => {
+            resultDisplay.classList.remove("error");
+            clearAll();
+          }, 2000);
+
+          // Efeito de partículas de erro
+          const rect = resultDisplay.getBoundingClientRect();
+          createParticleEffect(
+            rect.right - 20,
+            rect.top + rect.height / 2,
+            "var(--error)"
+          );
+        }
+      }
+
+      function clearAll() {
+        currentInput = "0";
+        expression = "";
+        updateDisplay();
+        updateExpression();
+        shouldResetDisplay = false;
+      }
+
+      function clearEntry() {
+        currentInput = "0";
+        updateDisplay();
+      }
+
+      function deleteLast() {
+        if (currentInput.length > 1) {
+          currentInput = currentInput.slice(0, -1);
+        } else {
+          currentInput = "0";
+        }
+        updateDisplay();
+      }
+
+      // Sistema de conversão
+      function setupConverter() {
+        const fromValue = document.getElementById("fromValue");
+        const toValue = document.getElementById("toValue");
+        const fromUnit = document.getElementById("fromUnit");
+        const toUnit = document.getElementById("toUnit");
+
+        const conversions = {
+          m: 1,
+          km: 1000,
+          cm: 0.01,
+          mm: 0.001,
+          in: 0.0254,
+          ft: 0.3048,
+        };
+
+        function convert() {
+          const value = parseFloat(fromValue.value) || 0;
+          const from = conversions[fromUnit.value];
+          const to = conversions[toUnit.value];
+          const result = (value * from) / to;
+          toValue.value = result.toFixed(6).replace(/\.?0+$/, "");
+        }
+
+        fromValue.addEventListener("input", convert);
+        fromUnit.addEventListener("change", convert);
+        toUnit.addEventListener("change", convert);
+      }
+
+      // Sistema de gráficos
+      function setupGraph() {
+        const canvas = document.getElementById("graphCanvas");
+        const ctx = canvas.getContext("2d");
+        const functionInput = document.getElementById("functionInput");
+
+        canvas.width = canvas.offsetWidth * 2;
+        canvas.height = canvas.offsetHeight * 2;
+        ctx.scale(2, 2);
+
+        function drawGraph(func = "x^2") {
+          ctx.clearRect(0, 0, canvas.width / 2, canvas.height / 2);
+
+          // Configurar grid
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+          ctx.lineWidth = 1;
+
+          // Linhas verticais
+          for (let x = 0; x <= canvas.width / 2; x += 20) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height / 2);
+            ctx.stroke();
+          }
+
+          // Linhas horizontais
+          for (let y = 0; y <= canvas.height / 2; y += 20) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width / 2, y);
+            ctx.stroke();
+          }
+
+          // Eixos
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(canvas.width / 4, 0);
+          ctx.lineTo(canvas.width / 4, canvas.height / 2);
+          ctx.moveTo(0, canvas.height / 4);
+          ctx.lineTo(canvas.width / 2, canvas.height / 4);
+          ctx.stroke();
+
+          // Desenhar função
+          ctx.strokeStyle = "#6366f1";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+
+          let firstPoint = true;
+          for (let x = -10; x <= 10; x += 0.1) {
+            try {
+              let y;
+              const expression = func.replace(/x/g, x.toString());
+              y = MathParser.evaluate(expression);
+
+              if (isFinite(y)) {
+                const canvasX = ((x + 10) * (canvas.width / 2)) / 20;
+                const canvasY =
+                  canvas.height / 2 - ((y + 10) * (canvas.height / 2)) / 20;
+
+                if (firstPoint) {
+                  ctx.moveTo(canvasX, canvasY);
+                  firstPoint = false;
+                } else {
+                  ctx.lineTo(canvasX, canvasY);
+                }
+              }
+            } catch (e) {
+              // Ignorar pontos inválidos
+            }
+          }
+
+          ctx.stroke();
+        }
+
+        functionInput.addEventListener("input", (e) => {
+          drawGraph(e.target.value || "x^2");
+        });
+
+        drawGraph();
+      }
+
+      // Suporte a teclado
+      document.addEventListener("keydown", function (event) {
+        const key = event.key;
+
+        if (key >= "0" && key <= "9") {
+          inputNumber(key);
+        } else if (key === ".") {
+          inputDecimal();
+        } else if (key === "+") {
+          inputOperator("+");
+        } else if (key === "-") {
+          inputOperator("-");
+        } else if (key === "*") {
+          inputOperator("*");
+        } else if (key === "/") {
+          event.preventDefault();
+          inputOperator("/");
+        } else if (key === "Enter" || key === "=") {
+          event.preventDefault();
+          calculate();
+        } else if (key === "Escape") {
+          clearAll();
+        } else if (key === "Backspace") {
+          event.preventDefault();
+          deleteLast();
+        }
+      });
+
+      // Efeitos nos botões
+      document.querySelectorAll(".btn, .btn-scientific").forEach((btn) => {
+        btn.addEventListener("click", function (e) {
+          const rect = btn.getBoundingClientRect();
+          const x = rect.left + rect.width / 2;
+          const y = rect.top + rect.height / 2;
+
+          createParticleEffect(x, y);
+
+          if (navigator.vibrate) {
+            navigator.vibrate(20);
+          }
+        });
+
+        // Tooltip
+        btn.addEventListener("mouseenter", function (e) {
+          const text = btn.textContent;
+          if (text.length > 2) {
+            tooltip.textContent = text;
+            tooltip.classList.add("show");
+
+            const rect = btn.getBoundingClientRect();
+            tooltip.style.left =
+              rect.left + rect.width / 2 - tooltip.offsetWidth / 2 + "px";
+            tooltip.style.top = rect.top - tooltip.offsetHeight - 10 + "px";
+          }
+        });
+
+        btn.addEventListener("mouseleave", function () {
+          tooltip.classList.remove("show");
+        });
+      });
+
+      // Inicialização
+      updateDisplay();
+      updateHistoryDisplay();
+    </script>
+  </body>
+</html>
